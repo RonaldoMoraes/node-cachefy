@@ -123,6 +123,7 @@ dist
 
 # Build output
 dist/
+dist-esm/
 build/
 out/
 
@@ -133,13 +134,18 @@ out/
 # Keep configuration files
 !jest.config.js
 !test-basic.js
+!.eslintrc.js
+!eslint.config.js
+!commitlint.config.js
 
 # IDE and Editor files
-.vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# Don't ignore VS Code settings for team development
+# .vscode/
 
 # OS generated files
 .DS_Store
