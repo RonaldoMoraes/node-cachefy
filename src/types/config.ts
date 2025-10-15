@@ -90,12 +90,17 @@ export interface MemoryStoreConfig extends BaseStoreConfig {
 /**
  * Union type for all store configurations
  */
-export type StoreConfig = RedisStoreConfig | MemcachedStoreConfig | MemoryStoreConfig;
+export type StoreConfig =
+  | RedisStoreConfig
+  | MemcachedStoreConfig
+  | MemoryStoreConfig;
 
 /**
  * Main cache configuration
  */
-export interface CacheConfig<T extends Record<string, StoreConfig> = Record<string, StoreConfig>> {
+export interface CacheConfig<
+  T extends Record<string, StoreConfig> = Record<string, StoreConfig>,
+> {
   default: keyof T;
   stores: T;
   globalTtl?: number; // Global default TTL in seconds

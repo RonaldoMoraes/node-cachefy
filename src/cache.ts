@@ -51,7 +51,11 @@ export class Cache {
    * @param value Value to cache
    * @param ttl Time to live in seconds (optional)
    */
-  static async set<T = any>(key: string, value: T, ttl?: number): Promise<void> {
+  static async set<T = any>(
+    key: string,
+    value: T,
+    ttl?: number
+  ): Promise<void> {
     const store = await this.getDefaultStore();
     return store.set(key, value, ttl);
   }
@@ -89,7 +93,9 @@ export class Cache {
    * @param keys Array of cache keys
    * @returns Object with keys and their values (null for missing keys)
    */
-  static async getMultiple<T = any>(keys: string[]): Promise<Record<string, T | null>> {
+  static async getMultiple<T = any>(
+    keys: string[]
+  ): Promise<Record<string, T | null>> {
     const store = await this.getDefaultStore();
     return store.getMultiple<T>(keys);
   }
@@ -99,7 +105,10 @@ export class Cache {
    * @param entries Object with key-value pairs
    * @param ttl Time to live in seconds (optional, applied to all entries)
    */
-  static async setMultiple<T = any>(entries: Record<string, T>, ttl?: number): Promise<void> {
+  static async setMultiple<T = any>(
+    entries: Record<string, T>,
+    ttl?: number
+  ): Promise<void> {
     const store = await this.getDefaultStore();
     return store.setMultiple(entries, ttl);
   }
@@ -176,7 +185,9 @@ export class Cache {
    */
   private static async getDefaultStore(): Promise<CacheDriver> {
     if (!this.defaultStore) {
-      throw new CacheConfigurationError('Cache not initialized. Call Cache.initialize() first.');
+      throw new CacheConfigurationError(
+        'Cache not initialized. Call Cache.initialize() first.'
+      );
     }
 
     return this.getStoreInstance(this.defaultStore);
@@ -187,14 +198,20 @@ export class Cache {
    * @param storeName Store name from configuration
    * @returns Cache driver instance
    */
-  private static async getStoreInstance(storeName: string): Promise<CacheDriver> {
+  private static async getStoreInstance(
+    storeName: string
+  ): Promise<CacheDriver> {
     if (!this.config) {
-      throw new CacheConfigurationError('Cache not initialized. Call Cache.initialize() first.');
+      throw new CacheConfigurationError(
+        'Cache not initialized. Call Cache.initialize() first.'
+      );
     }
 
     const storeConfig = this.config.stores[storeName];
     if (!storeConfig) {
-      throw new CacheConfigurationError(`Store '${storeName}' not found in configuration.`);
+      throw new CacheConfigurationError(
+        `Store '${storeName}' not found in configuration.`
+      );
     }
 
     let storeInstance = this.stores.get(storeName);
@@ -222,30 +239,42 @@ export class Cache {
    * @param storeName Store name for error context
    * @returns Cache driver instance
    */
-  private static createDriver(config: StoreConfig, storeName: string): CacheDriver {
+  private static createDriver(
+    config: StoreConfig,
+    storeName: string
+  ): CacheDriver {
     const options: DriverOptions = {
       keyPrefix: config.keyPrefix ?? undefined,
       defaultTtl: config.defaultTtl ?? this.config?.globalTtl ?? 3600,
-      errorMode: config.errorMode ?? this.config?.globalErrorMode ?? 'strict' as ErrorMode,
-      reconnect: config.reconnect ? {
-        maxRetries: config.reconnect.maxRetries ?? undefined,
-        retryDelay: config.reconnect.retryDelay ?? undefined,
-        exponentialBackoff: config.reconnect.exponentialBackoff ?? undefined,
-      } : undefined,
+      errorMode:
+        config.errorMode ??
+        this.config?.globalErrorMode ??
+        ('strict' as ErrorMode),
+      reconnect: config.reconnect
+        ? {
+            maxRetries: config.reconnect.maxRetries ?? undefined,
+            retryDelay: config.reconnect.retryDelay ?? undefined,
+            exponentialBackoff:
+              config.reconnect.exponentialBackoff ?? undefined,
+          }
+        : undefined,
     };
 
     switch (config.driver) {
       case 'memory':
         return new MemoryDriver(config.connection, options);
-      
+
       case 'redis':
         return new RedisDriver(config.connection, options);
-      
+
       case 'memcached':
         return new MemcachedDriver(config.connection, options);
-      
+
       default:
-        throw new CacheConfigurationError(`Unknown driver type: ${(config as any).driver}`, storeName);
+        throw new CacheConfigurationError(
+          `Unknown driver type: ${(config as any).driver}`,
+          storeName
+        );
     }
   }
 
@@ -254,7 +283,10 @@ export class Cache {
    * @param storeInstance Store instance to initialize
    * @param storeName Store name for error context
    */
-  private static async initializeStore(storeInstance: StoreInstance, storeName: string): Promise<void> {
+  private static async initializeStore(
+    storeInstance: StoreInstance,
+    storeName: string
+  ): Promise<void> {
     try {
       await storeInstance.driver.initialize();
       storeInstance.initialized = true;
@@ -299,12 +331,17 @@ class CacheStoreProxy {
     return store.clear();
   }
 
-  async getMultiple<T = any>(keys: string[]): Promise<Record<string, T | null>> {
+  async getMultiple<T = any>(
+    keys: string[]
+  ): Promise<Record<string, T | null>> {
     const store = await Cache['getStoreInstance'](this.storeName);
     return store.getMultiple<T>(keys);
   }
 
-  async setMultiple<T = any>(entries: Record<string, T>, ttl?: number): Promise<void> {
+  async setMultiple<T = any>(
+    entries: Record<string, T>,
+    ttl?: number
+  ): Promise<void> {
     const store = await Cache['getStoreInstance'](this.storeName);
     return store.setMultiple(entries, ttl);
   }

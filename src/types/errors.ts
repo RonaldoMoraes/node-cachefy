@@ -6,13 +6,18 @@ export class CacheError extends Error {
   public readonly store: string | undefined;
   public readonly operation: string | undefined;
 
-  constructor(message: string, code: string, store?: string, operation?: string) {
+  constructor(
+    message: string,
+    code: string,
+    store?: string,
+    operation?: string
+  ) {
     super(message);
     this.name = 'CacheError';
     this.code = code;
     this.store = store;
     this.operation = operation;
-    
+
     // Maintain proper stack trace
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, CacheError);
@@ -36,7 +41,12 @@ export class CacheConnectionError extends CacheError {
 export class CacheSerializationError extends CacheError {
   public readonly originalError: Error | undefined;
 
-  constructor(message: string, originalError?: Error, store?: string, operation?: string) {
+  constructor(
+    message: string,
+    originalError?: Error,
+    store?: string,
+    operation?: string
+  ) {
     super(message, 'SERIALIZATION_ERROR', store, operation);
     this.name = 'CacheSerializationError';
     this.originalError = originalError;
@@ -69,7 +79,12 @@ export class CacheTimeoutError extends CacheError {
 export class CacheDriverError extends CacheError {
   public readonly originalError: Error | undefined;
 
-  constructor(message: string, originalError?: Error, store?: string, operation?: string) {
+  constructor(
+    message: string,
+    originalError?: Error,
+    store?: string,
+    operation?: string
+  ) {
     super(message, 'DRIVER_ERROR', store, operation);
     this.name = 'CacheDriverError';
     this.originalError = originalError;
@@ -84,11 +99,13 @@ export type ErrorMode = 'strict' | 'graceful';
 /**
  * Result type for graceful error handling
  */
-export type CacheResult<T> = {
-  success: true;
-  data: T;
-} | {
-  success: false;
-  error: CacheError;
-  data: null;
-};
+export type CacheResult<T> =
+  | {
+      success: true;
+      data: T;
+    }
+  | {
+      success: false;
+      error: CacheError;
+      data: null;
+    };

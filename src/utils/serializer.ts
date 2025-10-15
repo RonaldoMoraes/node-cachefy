@@ -16,15 +16,15 @@ export class Serializer {
       if (value === null || value === undefined) {
         return JSON.stringify(value);
       }
-      
+
       if (typeof value === 'string') {
         return JSON.stringify(value);
       }
-      
+
       if (typeof value === 'number' || typeof value === 'boolean') {
         return JSON.stringify(value);
       }
-      
+
       // Handle objects, arrays, etc.
       return JSON.stringify(value);
     } catch (error) {

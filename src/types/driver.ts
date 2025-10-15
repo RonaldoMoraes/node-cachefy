@@ -39,7 +39,7 @@ export interface CacheDriver {
   /**
    * Check if a key exists in cache
    * @param key Cache key
-   * @returns True if the key exists, false otherwise
+   * @returns True if the key exists
    */
   exists(key: string): Promise<boolean>;
 
@@ -121,9 +121,11 @@ export interface DriverOptions {
   keyPrefix: string | undefined;
   defaultTtl: number | undefined;
   errorMode: ErrorMode | undefined;
-  reconnect: {
-    maxRetries: number | undefined;
-    retryDelay: number | undefined;
-    exponentialBackoff: boolean | undefined;
-  } | undefined;
+  reconnect:
+    | {
+        maxRetries: number | undefined;
+        retryDelay: number | undefined;
+        exponentialBackoff: boolean | undefined;
+      }
+    | undefined;
 }

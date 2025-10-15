@@ -72,13 +72,18 @@ export class MemoryDriver implements CacheDriver {
     const now = Date.now();
 
     // Check if we're at capacity and need to evict
-    if (this.config.maxSize && this.store.size >= this.config.maxSize && !this.store.has(fullKey)) {
+    if (
+      this.config.maxSize &&
+      this.store.size >= this.config.maxSize &&
+      !this.store.has(fullKey)
+    ) {
       this.evictLeastRecentlyUsed();
     }
 
     const entry: CacheEntry<T> = {
       value,
-      expiresAt: effectiveTtl && effectiveTtl > 0 ? now + (effectiveTtl * 1000) : null,
+      expiresAt:
+        effectiveTtl && effectiveTtl > 0 ? now + effectiveTtl * 1000 : null,
       createdAt: now,
       accessedAt: now,
     };
@@ -90,7 +95,7 @@ export class MemoryDriver implements CacheDriver {
   async delete(key: string): Promise<boolean> {
     const fullKey = this.getFullKey(key);
     const existed = this.store.has(fullKey);
-    
+
     if (existed) {
       this.store.delete(fullKey);
       this.stats.deletes++;
@@ -121,7 +126,9 @@ export class MemoryDriver implements CacheDriver {
     this.resetStats();
   }
 
-  async getMultiple<T = any>(keys: string[]): Promise<Record<string, T | null>> {
+  async getMultiple<T = any>(
+    keys: string[]
+  ): Promise<Record<string, T | null>> {
     const result: Record<string, T | null> = {};
 
     for (const key of keys) {
@@ -131,7 +138,10 @@ export class MemoryDriver implements CacheDriver {
     return result;
   }
 
-  async setMultiple<T = any>(entries: Record<string, T>, ttl?: number): Promise<void> {
+  async setMultiple<T = any>(
+    entries: Record<string, T>,
+    ttl?: number
+  ): Promise<void> {
     for (const [key, value] of Object.entries(entries)) {
       await this.set(key, value, ttl);
     }
@@ -154,7 +164,7 @@ export class MemoryDriver implements CacheDriver {
     const currentValue = await this.get<number>(key);
     const numericValue = typeof currentValue === 'number' ? currentValue : 0;
     const newValue = numericValue + increment;
-    
+
     await this.set(key, newValue);
     return newValue;
   }
@@ -192,17 +202,26 @@ export class MemoryDriver implements CacheDriver {
 
   private validateConfig(): void {
     if (this.config.maxSize !== undefined && this.config.maxSize <= 0) {
-      throw new CacheConfigurationError('maxSize must be greater than 0', 'memory');
+      throw new CacheConfigurationError(
+        'maxSize must be greater than 0',
+        'memory'
+      );
     }
 
-    if (this.config.cleanupInterval !== undefined && this.config.cleanupInterval <= 0) {
-      throw new CacheConfigurationError('cleanupInterval must be greater than 0', 'memory');
+    if (
+      this.config.cleanupInterval !== undefined &&
+      this.config.cleanupInterval <= 0
+    ) {
+      throw new CacheConfigurationError(
+        'cleanupInterval must be greater than 0',
+        'memory'
+      );
     }
   }
 
   private startCleanupTimer(): void {
     const interval = (this.config.cleanupInterval ?? 60) * 1000; // Convert to milliseconds
-    
+
     this.cleanupTimer = setInterval(() => {
       this.cleanup();
     }, interval);
@@ -247,7 +266,7 @@ export class MemoryDriver implements CacheDriver {
   private getMemoryUsage(): number {
     // Rough estimation of memory usage
     let size = 0;
-    
+
     for (const [key, entry] of this.store.entries()) {
       size += key.length * 2; // Rough string size in bytes
       size += JSON.stringify(entry.value).length * 2; // Rough value size

@@ -1,10 +1,21 @@
-import { createClient, RedisClientType, RedisDefaultModules, RedisFunctions, RedisModules, RedisScripts } from 'redis';
+import {
+  createClient,
+  RedisClientType,
+  RedisDefaultModules,
+  RedisFunctions,
+  RedisModules,
+  RedisScripts,
+} from 'redis';
 import { CacheDriver, CacheStats, DriverOptions } from '../types/driver';
 import { RedisConfig } from '../types/config';
 import { CacheConnectionError, CacheDriverError } from '../types/errors';
 import { Serializer } from '../utils/serializer';
 
-type RedisClient = RedisClientType<RedisDefaultModules & RedisModules, RedisFunctions, RedisScripts>;
+type RedisClient = RedisClientType<
+  RedisDefaultModules & RedisModules,
+  RedisFunctions,
+  RedisScripts
+>;
 
 /**
  * Redis cache driver implementation
@@ -34,13 +45,13 @@ export class RedisDriver implements CacheDriver {
   async initialize(): Promise<void> {
     try {
       this.client = this.createClient();
-      
+
       // Set up event listeners
       this.setupEventListeners();
-      
+
       // Connect to Redis
       await this.client.connect();
-      
+
       this.reconnectAttempts = 0;
     } catch (error) {
       throw new CacheConnectionError(
@@ -62,7 +73,7 @@ export class RedisDriver implements CacheDriver {
     try {
       const fullKey = this.getFullKey(key);
       const result = await this.client!.get(fullKey);
-      
+
       if (result === null) {
         return null;
       }
@@ -158,7 +169,9 @@ export class RedisDriver implements CacheDriver {
     }
   }
 
-  async getMultiple<T = any>(keys: string[]): Promise<Record<string, T | null>> {
+  async getMultiple<T = any>(
+    keys: string[]
+  ): Promise<Record<string, T | null>> {
     if (!this.isReady()) {
       await this.ensureConnection();
     }
@@ -166,12 +179,14 @@ export class RedisDriver implements CacheDriver {
     try {
       const fullKeys = keys.map(key => this.getFullKey(key));
       const results = await this.client!.mGet(fullKeys);
-      
+
       const response: Record<string, T | null> = {};
-      
+
       for (let i = 0; i < keys.length; i++) {
         const result = results[i];
-        response[keys[i]] = result ? Serializer.deserialize<T>(result, 'redis') : null;
+        response[keys[i]] = result
+          ? Serializer.deserialize<T>(result, 'redis')
+          : null;
       }
 
       return response;
@@ -185,7 +200,10 @@ export class RedisDriver implements CacheDriver {
     }
   }
 
-  async setMultiple<T = any>(entries: Record<string, T>, ttl?: number): Promise<void> {
+  async setMultiple<T = any>(
+    entries: Record<string, T>,
+    ttl?: number
+  ): Promise<void> {
     if (!this.isReady()) {
       await this.ensureConnection();
     }
@@ -197,7 +215,7 @@ export class RedisDriver implements CacheDriver {
       for (const [key, value] of Object.entries(entries)) {
         const fullKey = this.getFullKey(key);
         const serializedValue = Serializer.serialize(value, 'redis');
-        
+
         if (effectiveTtl && effectiveTtl > 0) {
           pipeline.setEx(fullKey, effectiveTtl, serializedValue);
         } else {
@@ -316,7 +334,7 @@ export class RedisDriver implements CacheDriver {
     if (this.client && this.client.isOpen) {
       await this.client.disconnect();
     }
-    
+
     this.client = null;
   }
 
@@ -356,7 +374,7 @@ export class RedisDriver implements CacheDriver {
   private setupEventListeners(): void {
     if (!this.client) return;
 
-    this.client.on('error', (err) => {
+    this.client.on('error', err => {
       console.error('Redis connection error:', err);
       this.handleConnectionError();
     });
@@ -393,8 +411,9 @@ export class RedisDriver implements CacheDriver {
     }
 
     const baseDelay = this.options.reconnect?.retryDelay ?? 1000;
-    const exponentialBackoff = this.options.reconnect?.exponentialBackoff ?? true;
-    
+    const exponentialBackoff =
+      this.options.reconnect?.exponentialBackoff ?? true;
+
     let delay = baseDelay;
     if (exponentialBackoff) {
       delay = baseDelay * Math.pow(2, Math.min(this.reconnectAttempts, 6));
@@ -403,7 +422,7 @@ export class RedisDriver implements CacheDriver {
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectTimer = null;
       this.reconnectAttempts++;
-      
+
       try {
         this.isConnecting = true;
         await this.reconnect();

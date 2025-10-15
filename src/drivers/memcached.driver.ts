@@ -1,4 +1,4 @@
-import Memcached = require('memcached');
+import Memcached from 'memcached';
 import { CacheDriver, CacheStats, DriverOptions } from '../types/driver';
 import { MemcachedConfig } from '../types/config';
 import { CacheConnectionError, CacheDriverError } from '../types/errors';
@@ -35,12 +35,12 @@ export class MemcachedDriver implements CacheDriver {
       const options = this.config.options || {};
 
       this.client = new Memcached(servers, options);
-      
+
       this.setupEventListeners();
-      
+
       // Test connection
       await this.testConnection();
-      
+
       this.isConnected = true;
       this.reconnectAttempts = 0;
     } catch (error) {
@@ -62,7 +62,7 @@ export class MemcachedDriver implements CacheDriver {
 
     try {
       const fullKey = this.getFullKey(key);
-      const result = await this.promisify<string>((callback) => {
+      const result = await this.promisify<string>(callback => {
         this.client!.get(fullKey, callback);
       });
 
@@ -91,7 +91,7 @@ export class MemcachedDriver implements CacheDriver {
       const serializedValue = Serializer.serialize(value, 'memcached');
       const effectiveTtl = ttl ?? this.options.defaultTtl;
 
-      await this.promisify<boolean>((callback) => {
+      await this.promisify<boolean>(callback => {
         this.client!.set(fullKey, serializedValue, effectiveTtl ?? 0, callback);
       });
     } catch (error) {
@@ -111,10 +111,10 @@ export class MemcachedDriver implements CacheDriver {
 
     try {
       const fullKey = this.getFullKey(key);
-      const result = await this.promisify<boolean>((callback) => {
+      const result = await this.promisify<boolean>(callback => {
         this.client!.del(fullKey, callback);
       });
-      
+
       return result === true;
     } catch (error) {
       throw new CacheDriverError(
@@ -147,7 +147,7 @@ export class MemcachedDriver implements CacheDriver {
     }
 
     try {
-      await this.promisify<boolean[]>((callback) => {
+      await this.promisify<boolean[]>(callback => {
         this.client!.flush(callback);
       });
     } catch (error) {
@@ -160,23 +160,27 @@ export class MemcachedDriver implements CacheDriver {
     }
   }
 
-  async getMultiple<T = any>(keys: string[]): Promise<Record<string, T | null>> {
+  async getMultiple<T = any>(
+    keys: string[]
+  ): Promise<Record<string, T | null>> {
     if (!this.isReady()) {
       throw new CacheConnectionError('Memcached client not ready', 'memcached');
     }
 
     try {
       const fullKeys = keys.map(key => this.getFullKey(key));
-      const results = await this.promisify<Record<string, string>>((callback) => {
+      const results = await this.promisify<Record<string, string>>(callback => {
         this.client!.getMulti(fullKeys, callback);
       });
 
       const response: Record<string, T | null> = {};
-      
+
       for (const key of keys) {
         const fullKey = this.getFullKey(key);
         const result = results[fullKey];
-        response[key] = result ? Serializer.deserialize<T>(result, 'memcached') : null;
+        response[key] = result
+          ? Serializer.deserialize<T>(result, 'memcached')
+          : null;
       }
 
       return response;
@@ -190,9 +194,12 @@ export class MemcachedDriver implements CacheDriver {
     }
   }
 
-  async setMultiple<T = any>(entries: Record<string, T>, ttl?: number): Promise<void> {
+  async setMultiple<T = any>(
+    entries: Record<string, T>,
+    ttl?: number
+  ): Promise<void> {
     // Memcached doesn't have a native setMultiple, so we'll use parallel sets
-    const promises = Object.entries(entries).map(([key, value]) => 
+    const promises = Object.entries(entries).map(([key, value]) =>
       this.set(key, value, ttl)
     );
 
@@ -232,10 +239,10 @@ export class MemcachedDriver implements CacheDriver {
 
     try {
       const fullKey = this.getFullKey(key);
-      
+
       // First try to increment
       try {
-        const result = await this.promisify<number | boolean>((callback) => {
+        const result = await this.promisify<number | boolean>(callback => {
           this.client!.incr(fullKey, increment, callback);
         });
         return typeof result === 'number' ? result : increment;
@@ -246,7 +253,10 @@ export class MemcachedDriver implements CacheDriver {
           return increment;
         } catch (setError) {
           // Log the error and rethrow the original increment error
-          console.error('Failed to set default value after increment failure:', setError);
+          console.error(
+            'Failed to set default value after increment failure:',
+            setError
+          );
           throw incrError;
         }
       }
@@ -267,10 +277,10 @@ export class MemcachedDriver implements CacheDriver {
 
     try {
       const fullKey = this.getFullKey(key);
-      
+
       // First try to decrement
       try {
-        const result = await this.promisify<number | boolean>((callback) => {
+        const result = await this.promisify<number | boolean>(callback => {
           this.client!.decr(fullKey, decrement, callback);
         });
         return typeof result === 'number' ? result : -decrement;
@@ -282,7 +292,10 @@ export class MemcachedDriver implements CacheDriver {
           return newValue;
         } catch (setError) {
           // Log the error and rethrow the original decrement error
-          console.error('Failed to set default value after decrement failure:', setError);
+          console.error(
+            'Failed to set default value after decrement failure:',
+            setError
+          );
           throw decrError;
         }
       }
@@ -302,7 +315,7 @@ export class MemcachedDriver implements CacheDriver {
     }
 
     try {
-      const stats = await this.promisify<Record<string, any>>((callback) => {
+      const stats = await this.promisify<Record<string, any>>(callback => {
         this.client!.stats(callback);
       });
 
@@ -352,7 +365,7 @@ export class MemcachedDriver implements CacheDriver {
       this.client.end();
       this.client = null;
     }
-    
+
     this.isConnected = false;
   }
 
@@ -364,18 +377,18 @@ export class MemcachedDriver implements CacheDriver {
   private setupEventListeners(): void {
     if (!this.client) return;
 
-    this.client.on('failure', (details) => {
+    this.client.on('failure', details => {
       console.error('Memcached server failure:', details);
       this.isConnected = false;
       this.handleConnectionError();
     });
 
-    this.client.on('reconnecting', (details) => {
-      console.log('Memcached reconnecting:', details);
+    this.client.on('reconnecting', details => {
+      console.warn('Memcached reconnecting:', details);
     });
 
-    this.client.on('reconnect', (details) => {
-      console.log('Memcached reconnected:', details);
+    this.client.on('reconnect', details => {
+      console.warn('Memcached reconnected:', details);
       this.isConnected = true;
       this.reconnectAttempts = 0;
       if (this.reconnectTimer) {
@@ -384,7 +397,7 @@ export class MemcachedDriver implements CacheDriver {
       }
     });
 
-    this.client.on('remove', (details) => {
+    this.client.on('remove', details => {
       console.warn('Memcached server removed:', details);
     });
   }
@@ -408,8 +421,9 @@ export class MemcachedDriver implements CacheDriver {
     }
 
     const baseDelay = this.options.reconnect?.retryDelay ?? 1000;
-    const exponentialBackoff = this.options.reconnect?.exponentialBackoff ?? true;
-    
+    const exponentialBackoff =
+      this.options.reconnect?.exponentialBackoff ?? true;
+
     let delay = baseDelay;
     if (exponentialBackoff) {
       delay = baseDelay * Math.pow(2, Math.min(this.reconnectAttempts, 6));
@@ -418,7 +432,7 @@ export class MemcachedDriver implements CacheDriver {
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectTimer = null;
       this.reconnectAttempts++;
-      
+
       try {
         await this.reconnect();
       } catch (error) {
@@ -436,7 +450,7 @@ export class MemcachedDriver implements CacheDriver {
       }
 
       // Test with a simple stats call
-      this.client.stats((err) => {
+      this.client.stats(err => {
         if (err) {
           reject(err);
         } else {
@@ -446,7 +460,9 @@ export class MemcachedDriver implements CacheDriver {
     });
   }
 
-  private promisify<T>(operation: (callback: (err: Error | null, result?: T) => void) => void): Promise<T> {
+  private promisify<T>(
+    operation: (callback: (err: Error | null, result?: T) => void) => void
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
       operation((err, result) => {
         if (err) {

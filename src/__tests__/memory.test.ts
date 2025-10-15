@@ -48,7 +48,7 @@ describe('Cache Memory Driver', () => {
 
     // Wait for expiration
     await new Promise(resolve => setTimeout(resolve, 1100));
-    
+
     value = await Cache.get('ttl-test');
     expect(value).toBeNull();
   });
@@ -57,7 +57,7 @@ describe('Cache Memory Driver', () => {
     await Cache.set('delete-test', 'value');
     const deleted = await Cache.delete('delete-test');
     expect(deleted).toBe(true);
-    
+
     const value = await Cache.get('delete-test');
     expect(value).toBeNull();
   });
@@ -73,28 +73,33 @@ describe('Cache Memory Driver', () => {
 
   test('should handle multiple operations', async () => {
     const entries = {
-      'key1': 'value1',
-      'key2': { data: 'value2' },
-      'key3': 42,
+      key1: 'value1',
+      key2: { data: 'value2' },
+      key3: 42,
     };
 
     await Cache.setMultiple(entries);
-    const results = await Cache.getMultiple(['key1', 'key2', 'key3', 'missing']);
-    
+    const results = await Cache.getMultiple([
+      'key1',
+      'key2',
+      'key3',
+      'missing',
+    ]);
+
     expect(results).toEqual({
-      'key1': 'value1',
-      'key2': { data: 'value2' },
-      'key3': 42,
-      'missing': null,
+      key1: 'value1',
+      key2: { data: 'value2' },
+      key3: 42,
+      missing: null,
     });
   });
 
   test('should increment and decrement', async () => {
     await Cache.set('counter', 10);
-    
+
     const incremented = await Cache.increment('counter', 5);
     expect(incremented).toBe(15);
-    
+
     const decremented = await Cache.decrement('counter', 3);
     expect(decremented).toBe(12);
   });
@@ -107,12 +112,12 @@ describe('Cache Memory Driver', () => {
   test('should clear all cache', async () => {
     await Cache.set('key1', 'value1');
     await Cache.set('key2', 'value2');
-    
+
     await Cache.clear();
-    
+
     const value1 = await Cache.get('key1');
     const value2 = await Cache.get('key2');
-    
+
     expect(value1).toBeNull();
     expect(value2).toBeNull();
   });
@@ -121,9 +126,9 @@ describe('Cache Memory Driver', () => {
     await Cache.set('stats-test', 'value');
     await Cache.get('stats-test'); // hit
     await Cache.get('non-existent'); // miss
-    
+
     const stats = await Cache.getStats();
-    
+
     expect(stats.connected).toBe(true);
     expect(stats.hits).toBeGreaterThan(0);
     expect(stats.misses).toBeGreaterThan(0);
