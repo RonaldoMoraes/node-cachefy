@@ -423,68 +423,17 @@ The `docker-compose.yml` includes:
 - **Health checks**: Ensures services are ready before tests
 - **Persistent volumes**: Redis data persistence
 
-## How to Contribute
+## Contributing
 
-We welcome contributions from the community! Here's how you can help:
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for detailed information on:
 
-### Getting Started
+- Development setup and workflow
+- Commit message guidelines (Conventional Commits)
+- Testing requirements
+- Pull request process
+- Code standards
 
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/YOUR-USERNAME/cachefy.git
-   cd cachefy
-   ```
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-4. **Create a feature branch**:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-### Development Workflow
-
-1. **Make your changes** following our coding standards
-2. **Add tests** for new functionality
-3. **Run the test suite**:
-   ```bash
-   npm test
-   ```
-4. **Build the project**:
-   ```bash
-   npm run build
-   ```
-5. **Commit your changes** with a clear message:
-   ```bash
-   git commit -m "feat: add new cache driver for X"
-   ```
-6. **Push to your fork**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-7. **Create a Pull Request** on GitHub
-
-### Contribution Guidelines
-
-- **Code Style**: Follow the existing TypeScript/ESLint configuration
-- **Tests**: All new features must include tests
-- **Documentation**: Update README and JSDoc comments for new features
-- **Backwards Compatibility**: Avoid breaking changes unless absolutely necessary
-- **Performance**: Consider performance implications of changes
-
-### Areas We Need Help With
-
-- **New Cache Drivers**: Support for additional cache backends (DynamoDB, Hazelcast, etc.)
-- **Performance Optimizations**: Improvements to serialization, connection pooling
-- **Documentation**: Examples, tutorials, and improved API documentation
-- **Testing**: More comprehensive integration and performance tests
-- **Bug Fixes**: Issues reported by the community
-
-### Code of Conduct
-
-Please be respectful and constructive in all interactions. We're building this together!
+**Quick start**: Fork the repo, make your changes with tests, follow conventional commits, and submit a PR!
 
 ## License
 
@@ -502,8 +451,8 @@ This project is licensed under the **MIT License** - see the [LICENSE.md](LICENS
 ### Getting Help
 
 - 📖 **Documentation**: Check this README and inline code documentation
-- 🐛 **Bug Reports**: [Open an issue](https://github.com/your-repo/cachefy/issues) with reproduction steps
-- 💡 **Feature Requests**: [Create a feature request](https://github.com/your-repo/cachefy/issues) with your use case
+- 🐛 **Bug Reports**: [Open an issue](https://github.com/RonaldoMoraes/node-cachefy/issues) with reproduction steps
+- 💡 **Feature Requests**: [Create a feature request](https://github.com/RonaldoMoraes/node-cachefy/issues) with your use case
 - 💬 **Questions**: Use GitHub Discussions for general questions
 
 ### Reporting Issues
