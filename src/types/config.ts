@@ -90,6 +90,8 @@ export interface MemoryStoreConfig extends BaseStoreConfig {
 /**
  * Union type for all store configurations
  */
+export type StoreDriverType = 'redis' | 'memcached' | 'memory';
+
 export type StoreConfig =
   | RedisStoreConfig
   | MemcachedStoreConfig
