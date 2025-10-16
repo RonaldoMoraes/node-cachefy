@@ -14,6 +14,8 @@ Cachefy solves the common problem of cache vendor lock-in by providing:
 - **Production Ready**: Built-in error handling, auto-reconnection, and monitoring
 - **Zero Configuration**: Works out of the box with sensible defaults
 - **Flexible Architecture**: Use different stores for different use cases in the same application
+- **Smart Store Management**: Centralized store management with proxy pattern for safe store access
+- **Reliable Testing**: Comprehensive test suite with proper cleanup and timeout handling
 
 Perfect for applications that need reliable caching with the flexibility to change backends as requirements evolve.
 
@@ -242,21 +244,37 @@ console.log(stats.hits, stats.misses, stats.keys);
 
 ## Error Handling
 
-Cachefy supports two error modes:
+Cachefy provides comprehensive error handling with specific error types and two operational modes:
 
-### Strict Mode (default)
-All errors are thrown and must be handled by your application.
+### Error Types
+
+- **CacheError**: Base error class for all cache-related errors
+- **CacheConfigurationError**: Configuration and initialization errors
+- **CacheConnectionError**: Connection and network-related errors
+- **CacheDriverError**: Driver-specific operation errors
+- **CacheSerializationError**: Data serialization/deserialization errors
+
+### Error Modes
+
+#### Strict Mode (default)
+All errors are thrown and must be handled by your application. This is recommended for development and when you need full control over error handling.
 
 ```typescript
 try {
-  await Cache.set('key', 'value');
+  await Cache.set('key', { complex: 'object' });
 } catch (error) {
-  console.error('Cache error:', error);
+  if (error instanceof CacheSerializationError) {
+    console.error('Failed to serialize data:', error.message);
+  } else if (error instanceof CacheConnectionError) {
+    console.error('Connection failed:', error.message);
+  } else {
+    console.error('Cache error:', error);
+  }
 }
 ```
 
-### Graceful Mode
-Errors are logged but don't throw exceptions. Operations return `null` on failure.
+#### Graceful Mode
+Errors are logged but don't throw exceptions. Operations return `null` on failure. This is useful in production when you want to fail silently.
 
 ```typescript
 // Configure graceful mode
@@ -265,7 +283,22 @@ const config = {
   globalErrorMode: 'graceful',
   stores: { /* ... */ }
 };
+
+// Operations will return null on error
+const result = await Cache.get('key');
+if (result === null) {
+  // Handle missing data or error case
+}
 ```
+
+### Error Context
+
+All errors provide detailed context:
+- Error message with specific details
+- Error type and code
+- Store name where the error occurred
+- Original error (if available)
+- Operation that caused the error
 
 ## Advanced Usage
 
@@ -364,55 +397,72 @@ await Cache.set('user:123', userData);
 
 ## Testing
 
-### Running Tests
+### Testing Architecture
 
-Cachefy comes with a comprehensive test suite to ensure reliability:
+Cachefy follows a well-structured testing approach:
+
+#### Test Organization
+- **Unit Tests**: Located in `__tests__/drivers/` - test individual components in isolation
+- **Integration Tests**: Located in `__tests__/integration/` - test real-world scenarios with actual cache servers
+- **Test Utilities**: Shared test helpers and fixtures for consistent testing
+
+#### Test Features
+- **Smart Cleanup**: Automatic resource cleanup with proper timeout handling
+- **Graceful Teardown**: Safe disconnection from cache servers
+- **Concurrent Testing**: Support for high-load parallel operations
+- **Edge Cases**: Tests for connection loss, reconnection, and error scenarios
+
+### Running Tests
 
 ```bash
 # Install dependencies
 npm install
 
+# Run unit tests (no external dependencies)
+npm run test:unit
+
+# Run integration tests (requires Redis/Memcached)
+npm run test:integration
+
 # Run all tests
 npm test
 
-# Run tests in watch mode (for development)
-npm run test:watch
-
 # Run tests with coverage
 npm test -- --coverage
+
+# Watch mode for development
+npm run test:watch
+```
+
+### Integration Testing
+
+For testing with real Redis and Memcached instances:
+
+```bash
+# Docker setup (recommended)
+npm run test:docker          # Runs all tests in containers
+
+# Manual setup
+docker-compose up -d         # Start cache servers
+npm run test:integration     # Run integration tests
+docker-compose down -v       # Cleanup
+
+# Individual commands
+npm run docker:up           # Start containers
+npm run docker:down         # Stop containers
+npm run docker:logs         # View logs
 ```
 
 ### Test Your Implementation
 
-You can test your cache configuration with the provided example:
+Test your cache configuration:
 
 ```bash
 # Build the project
 npm run build
 
-# Run the basic usage example
+# Run example
 node -r ts-node/register examples/basic-usage.ts
-```
-
-### Integration Testing
-
-For testing with real Redis and Memcached instances, we provide a Docker Compose setup:
-
-```bash
-# Easy way: Run all tests with Docker (recommended)
-npm run test:docker
-
-# Manual way: Start services and run tests
-docker-compose up -d          # Start Redis and Memcached
-npm run test:integration      # Run integration tests
-docker-compose down -v        # Stop and cleanup
-
-# Individual commands
-npm run test:unit            # Run only unit tests (no external dependencies)
-npm run test:integration     # Run only integration tests
-npm run docker:up           # Start Docker containers
-npm run docker:down         # Stop Docker containers
-npm run docker:logs         # View container logs
 ```
 
 #### Docker Services
