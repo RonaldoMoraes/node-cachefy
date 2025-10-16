@@ -9,7 +9,7 @@ import {
 import { CacheDriver, CacheStats, DriverOptions } from '../types/driver';
 import { RedisConfig } from '../types/config';
 import { CacheConnectionError, CacheDriverError } from '../types/errors';
-import { Serializer } from '../utils/serializer';
+import { serialize, deserialize } from '../utils/serializer';
 
 type RedisClient = RedisClientType<
   RedisDefaultModules & RedisModules,
@@ -78,7 +78,7 @@ export class RedisDriver implements CacheDriver {
         return null;
       }
 
-      return Serializer.deserialize<T>(result, 'redis');
+      return deserialize<T>(result, 'redis');
     } catch (error) {
       throw new CacheDriverError(
         `Failed to get key '${key}': ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -96,7 +96,7 @@ export class RedisDriver implements CacheDriver {
 
     try {
       const fullKey = this.getFullKey(key);
-      const serializedValue = Serializer.serialize(value, 'redis');
+      const serializedValue = serialize(value, 'redis');
       const effectiveTtl = ttl ?? this.options.defaultTtl;
 
       if (effectiveTtl && effectiveTtl > 0) {
@@ -184,9 +184,7 @@ export class RedisDriver implements CacheDriver {
 
       for (let i = 0; i < keys.length; i++) {
         const result = results[i];
-        response[keys[i]] = result
-          ? Serializer.deserialize<T>(result, 'redis')
-          : null;
+        response[keys[i]] = result ? deserialize<T>(result, 'redis') : null;
       }
 
       return response;
@@ -214,7 +212,7 @@ export class RedisDriver implements CacheDriver {
 
       for (const [key, value] of Object.entries(entries)) {
         const fullKey = this.getFullKey(key);
-        const serializedValue = Serializer.serialize(value, 'redis');
+        const serializedValue = serialize(value, 'redis');
 
         if (effectiveTtl && effectiveTtl > 0) {
           pipeline.setEx(fullKey, effectiveTtl, serializedValue);

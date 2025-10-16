@@ -2,7 +2,7 @@ import Memcached from 'memcached';
 import { CacheDriver, CacheStats, DriverOptions } from '../types/driver';
 import { MemcachedConfig } from '../types/config';
 import { CacheConnectionError, CacheDriverError } from '../types/errors';
-import { Serializer } from '../utils/serializer';
+import { serialize, deserialize } from '../utils/serializer';
 
 /**
  * Memcached cache driver implementation
@@ -70,7 +70,7 @@ export class MemcachedDriver implements CacheDriver {
         return null;
       }
 
-      return Serializer.deserialize<T>(result, 'memcached');
+      return deserialize<T>(result, 'memcached');
     } catch (error) {
       throw new CacheDriverError(
         `Failed to get key '${key}': ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -88,7 +88,7 @@ export class MemcachedDriver implements CacheDriver {
 
     try {
       const fullKey = this.getFullKey(key);
-      const serializedValue = Serializer.serialize(value, 'memcached');
+      const serializedValue = serialize(value, 'memcached');
       const effectiveTtl = ttl ?? this.options.defaultTtl;
 
       await this.promisify<boolean>(callback => {
@@ -178,9 +178,7 @@ export class MemcachedDriver implements CacheDriver {
       for (const key of keys) {
         const fullKey = this.getFullKey(key);
         const result = results[fullKey];
-        response[key] = result
-          ? Serializer.deserialize<T>(result, 'memcached')
-          : null;
+        response[key] = result ? deserialize<T>(result, 'memcached') : null;
       }
 
       return response;
