@@ -1,4 +1,4 @@
-import { Cache } from '../index';
+import { Cache } from '../../index';
 
 describe('Cache Memory Driver', () => {
   beforeEach(async () => {
@@ -20,7 +20,11 @@ describe('Cache Memory Driver', () => {
   });
 
   afterEach(async () => {
+    jest.useFakeTimers();
     await Cache.disconnect();
+    // Advance timers to allow cleanup to complete
+    jest.advanceTimersByTime(100);
+    jest.useRealTimers();
   });
 
   test('should store and retrieve values', async () => {
@@ -42,15 +46,19 @@ describe('Cache Memory Driver', () => {
   });
 
   test('should handle TTL expiration', async () => {
+    jest.useFakeTimers();
+
     await Cache.set('ttl-test', 'value', 1); // 1 second TTL
     let value = await Cache.get('ttl-test');
     expect(value).toBe('value');
 
-    // Wait for expiration
-    await new Promise(resolve => setTimeout(resolve, 1100));
+    // Advance time by 1.1 seconds
+    jest.advanceTimersByTime(1100);
 
     value = await Cache.get('ttl-test');
     expect(value).toBeNull();
+
+    jest.useRealTimers();
   });
 
   test('should delete keys', async () => {
