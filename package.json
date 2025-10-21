@@ -1,5 +1,5 @@
 {
-  "name": "cachefy",
+  "name": "node-cachefy",
   "version": "1.0.0",
   "description": "A flexible, type-safe caching abstraction layer for Node.js with support for multiple cache stores",
   "main": "dist/index.js",
