@@ -1,27 +1,60 @@
 import { CacheDriver, DriverOptions } from '../types/driver';
-import { StoreConfig } from '../types/config';
+import {
+  StoreConfig,
+  MemoryConfig,
+  RedisConfig,
+  MemcachedConfig,
+} from '../types/config';
 import { CacheConfigurationError } from '../types/errors';
-import { MemoryDriver } from '../drivers/memory.driver';
-import { RedisDriver } from '../drivers/redis.driver';
-import { MemcachedDriver } from '../drivers/memcached.driver';
+import { DriverRegistry } from '../registry/driver.registry';
 
 export interface DriverFactory {
   createDriver(config: StoreConfig, options: DriverOptions): CacheDriver;
 }
 
 export class CacheDriverFactory implements DriverFactory {
+  constructor() {
+    // Register built-in drivers
+    this.registerBuiltInDrivers();
+  }
+
   createDriver(config: StoreConfig, options: DriverOptions): CacheDriver {
-    switch (config.driver) {
-      case 'memory':
-        return new MemoryDriver(config.connection, options);
-      case 'redis':
-        return new RedisDriver(config.connection, options);
-      case 'memcached':
-        return new MemcachedDriver(config.connection, options);
-      default:
-        throw new CacheConfigurationError(
-          `Unknown driver type: ${(config as any).driver}`
-        );
+    try {
+      const factory = DriverRegistry.getFactory(config.driver);
+      return factory(config, options);
+    } catch (error) {
+      throw new CacheConfigurationError(
+        `Failed to create driver '${config.driver}': ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
+  }
+
+  private registerBuiltInDrivers(): void {
+    // These will be imported and registered from their respective modules
+    import('../drivers/memory.driver').then(({ MemoryDriver }) => {
+      DriverRegistry.register(
+        'memory',
+        (config: StoreConfig, options: DriverOptions) =>
+          new MemoryDriver(config.connection as MemoryConfig, options)
+      );
+    });
+
+    import('../drivers/redis.driver').then(({ RedisDriver }) => {
+      DriverRegistry.register(
+        'redis',
+        (config: StoreConfig, options: DriverOptions) =>
+          new RedisDriver(config.connection as RedisConfig, options)
+      );
+    });
+
+    import('../drivers/memcached.driver').then(({ MemcachedDriver }) => {
+      DriverRegistry.register(
+        'memcached',
+        (config: StoreConfig, options: DriverOptions) =>
+          new MemcachedDriver(config.connection as MemcachedConfig, options)
+      );
+    });
   }
 }
