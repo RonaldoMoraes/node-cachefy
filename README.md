@@ -41,45 +41,198 @@ yarn add cachefy
 pnpm add cachefy
 ```
 
-## Quick Start
+## Usage Examples
+
+### Basic Usage
 
 ```typescript
 import { Cache } from 'cachefy';
 
-// Configure your cache stores
-const config = {
+// 1. Configure and initialize
+await Cache.initialize({
   default: 'memory',
   stores: {
     memory: {
       driver: 'memory',
-      connection: {
-        maxSize: 1000,
-        cleanupInterval: 60,
-      },
-      defaultTtl: 300,
-    },
+      connection: { maxSize: 1000 }
+    }
+  }
+});
+
+// 2. Store data with type safety
+interface User {
+  id: number;
+  name: string;
+  lastAccess: Date;
+}
+
+const user: User = {
+  id: 1,
+  name: 'John Doe',
+  lastAccess: new Date()
+};
+
+await Cache.set('user:1', user);
+const cachedUser = await Cache.get<User>('user:1');
+
+// 3. Clean up when done
+await Cache.disconnect();
+```
+
+### Real-World Examples
+
+#### User Session Management
+```typescript
+// Configure with Redis for session storage
+await Cache.initialize({
+  default: 'redis',
+  stores: {
     redis: {
       driver: 'redis',
       connection: {
-        host: 'localhost',
-        port: 6379,
+        host: process.env.REDIS_HOST,
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD
       },
-      defaultTtl: 3600,
-      keyPrefix: 'myapp:',
+      keyPrefix: 'session:',
+      defaultTtl: 3600 // 1 hour
+    }
+  }
+});
+
+// Store session
+interface Session {
+  userId: string;
+  role: string;
+  permissions: string[];
+}
+
+async function createSession(sessionId: string, userData: Session) {
+  await Cache.set(`session:${sessionId}`, userData);
+}
+
+// Validate session
+async function validateSession(sessionId: string): Promise<Session | null> {
+  return Cache.get<Session>(`session:${sessionId}`);
+}
+
+// Invalidate session
+async function logout(sessionId: string) {
+  await Cache.delete(`session:${sessionId}`);
+}
+```
+
+#### API Response Caching
+```typescript
+interface APIResponse {
+  data: any;
+  timestamp: number;
+}
+
+async function getCachedAPIData(endpoint: string): Promise<any> {
+  // Try to get from cache first
+  const cached = await Cache.get<APIResponse>(`api:${endpoint}`);
+  
+  if (cached) {
+    const age = Date.now() - cached.timestamp;
+    if (age < 300000) { // 5 minutes
+      return cached.data;
+    }
+  }
+  
+  // Cache miss or stale data - fetch from API
+  const response = await fetch(`https://api.example.com/${endpoint}`);
+  const data = await response.json();
+  
+  // Cache the new response
+  await Cache.set(`api:${endpoint}`, {
+    data,
+    timestamp: Date.now()
+  }, 300); // 5 minutes TTL
+  
+  return data;
+}
+```
+
+#### Rate Limiting
+```typescript
+async function checkRateLimit(userId: string, limit: number): Promise<boolean> {
+  const key = `ratelimit:${userId}`;
+  
+  // Get current count
+  const count = await Cache.get<number>(key) || 0;
+  
+  if (count >= limit) {
+    return false; // Rate limit exceeded
+  }
+  
+  // Increment count
+  await Cache.increment(key, 1);
+  
+  // Set TTL if this is the first request
+  if (count === 0) {
+    await Cache.set(key, 1, 3600); // Reset after 1 hour
+  }
+  
+  return true;
+}
+```
+
+#### Distributed Locking
+```typescript
+async function acquireLock(resource: string, ttl: number = 30): Promise<boolean> {
+  const lockKey = `lock:${resource}`;
+  const lockValue = Date.now().toString();
+  
+  // Try to set the lock (will fail if key exists)
+  const acquired = await Cache.set(lockKey, lockValue, ttl);
+  
+  return !!acquired;
+}
+
+async function releaseLock(resource: string): Promise<void> {
+  await Cache.delete(`lock:${resource}`);
+}
+
+// Usage in critical section
+async function criticalOperation() {
+  if (await acquireLock('resource-name', 30)) {
+    try {
+      // Perform critical operation
+    } finally {
+      await releaseLock('resource-name');
+    }
+  } else {
+    throw new Error('Could not acquire lock');
+  }
+}
+```
+
+### Multi-Store Strategy
+```typescript
+await Cache.initialize({
+  default: 'memory',
+  stores: {
+    memory: {
+      driver: 'memory',
+      connection: { maxSize: 1000 },
+      defaultTtl: 300 // 5 minutes
     },
-  },
-};
+    redis: {
+      driver: 'redis',
+      connection: { host: 'localhost' },
+      defaultTtl: 3600 // 1 hour
+    }
+  }
+});
 
-// Initialize the cache system
-await Cache.initialize(config);
+// Use memory cache for frequently accessed data
+const memoryStore = Cache.store('memory');
+await memoryStore.set('config', appConfig);
 
-// Use the default store
-await Cache.set('user:123', { name: 'John', email: 'john@example.com' });
-const user = await Cache.get<User>('user:123');
-
-// Use a specific store
-await Cache.store('redis').set('session:abc', sessionData);
-const session = await Cache.store('redis').get('session:abc');
+// Use Redis for persistent data
+const redisStore = Cache.store('redis');
+await redisStore.set('user-preferences', userPrefs);
 ```
 
 ## Configuration
