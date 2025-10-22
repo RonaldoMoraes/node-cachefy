@@ -15,3 +15,6 @@ export { DriverFactory, CacheDriverFactory } from './factories/driver.factory';
 
 // Utilities
 export { serialize, deserialize } from './utils/serializer';
+
+// Middleware
+export { createCacheMiddleware, cacheMiddleware } from './middleware';
